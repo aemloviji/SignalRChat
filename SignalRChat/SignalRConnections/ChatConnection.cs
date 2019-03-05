@@ -21,33 +21,44 @@ namespace SignalRChat.SignalRConnections
 
         protected override Task OnReceived(IRequest request, string connectionId, string data)
         {
-            var clientRequest = ParseClientRequest(data);
-
-            if (clientRequest.GetType() == typeof(UserConnectedRequest))
+            var commonClientRequestData = DeserializeClientRequestData(data);
+            var clientRequest = DeserializeClientRequest(commonClientRequestData.Type, data);
+            if (commonClientRequestData.Type == nameof(UserConnectedRequest))
             {
-                var user = _connectedUsers.FirstOrDefault(u => u.ConnectionId == connectionId && string.IsNullOrEmpty(u.Name));
-                if (UserIsNotNull(user))
-                {
-                    //TODO make it generic
-                    user.Name = ((UserConnectedRequest)clientRequest).Username;
-                }
+                UpdateUserUserName(connectionId, clientRequest);
             }
 
-            return Connection.Broadcast(clientRequest);
+            return Connection.Broadcast(GeneratePayload(commonClientRequestData.Type, clientRequest));
         }
 
         protected override Task OnDisconnected(IRequest request, string connectionId, bool stopCalled)
         {
             RemoveUser(connectionId);
-            return Connection.Broadcast(CreateUserDisconnectedPayload(connectionId), connectionId);
+            var payload = CreateUserDisconnectedPayload(connectionId);
+
+            return Connection.Broadcast(payload, connectionId);
         }
 
-        private static void AddUserToList(string connectionId)
+        private void UpdateUserUserName(string connectionId, object clientRequest)
+        {
+            var user = FindUserWithEmptyUserName(connectionId);
+            if (HasUser(user))
+            {
+                user.Name = ((UserConnectedRequest)clientRequest).Username;
+            }
+        }
+
+        private User FindUserWithEmptyUserName(string connectionId)
+        {
+            return _connectedUsers.FirstOrDefault(u => u.ConnectionId == connectionId && string.IsNullOrEmpty(u.Name));
+        }
+
+        private void AddUserToList(string connectionId)
         {
             _connectedUsers.Add(CreateUser(connectionId));
         }
 
-        private static User CreateUser(string connectionId)
+        private User CreateUser(string connectionId)
         {
             return new User()
             {
@@ -55,36 +66,67 @@ namespace SignalRChat.SignalRConnections
             };
         }
 
+        private ClientRequest DeserializeClientRequestData(string data)
+        {
+            return JsonConvert.DeserializeObject<ClientRequest>(data);
+        }
 
-        private static object ParseClientRequest(string data)
+        private object DeserializeClientRequest(string clientRequestType, string data)
         {
             object request = null;
-
-            ClientRequest clientRequest = JsonConvert.DeserializeObject<ClientRequest>(data);
-            switch (clientRequest.Type)
+            if (clientRequestType == nameof(UserConnectedRequest))
             {
-                case nameof(UserConnectedRequest):
-                    request = JsonConvert.DeserializeObject<UserConnectedPayload>(data);
-                    break;
-                case nameof(NewMessageRequest):
-                    request = JsonConvert.DeserializeObject<NewMessageRequest>(data);
-                    break;
+                request = JsonConvert.DeserializeObject<UserConnectedRequest>(data);
+            }
+            else if (clientRequestType == nameof(NewMessageRequest))
+            {
+                request = JsonConvert.DeserializeObject<NewMessageRequest>(data);
             }
 
             return request;
         }
 
-        private static UserConnectedPayload CreateUserConnectedPayload()
+        private object GeneratePayload(string clientRequestType, object data)
         {
-            return new UserConnectedPayload()
+            object payload = null;
+            if (clientRequestType == nameof(UserConnectedRequest))
             {
-                Type = nameof(UserConnectedPayload),
-                Users = _connectedUsers
-            };
+                payload = GenerateUserConnectedPayload(data);
+            }
+            else if (clientRequestType == nameof(NewMessageRequest))
+            {
+                payload = GenerateNewMessagePayload(data);
+            }
+
+            return payload;
         }
 
+        private object GenerateNewMessagePayload(object data)
+        {
+            var obj = (NewMessageRequest)data;
+            object payload = new NewMessagePayload()
+            {
+                Type = nameof(NewMessagePayload),
+                UserName = obj.UserName,
+                Message = obj.Message
+            };
 
-        private static UserDisconnectedPayload CreateUserDisconnectedPayload(string connectionId)
+            return payload;
+        }
+
+        private object GenerateUserConnectedPayload(object data)
+        {
+            var obj = (UserConnectedRequest)data;
+            var payload = new UserConnectedPayload()
+            {
+                Type = nameof(UserConnectedPayload),
+                Users = new List<User>()
+            };
+
+            return payload;
+        }
+
+        private UserDisconnectedPayload CreateUserDisconnectedPayload(string connectionId)
         {
             return new UserDisconnectedPayload()
             {
@@ -93,12 +135,12 @@ namespace SignalRChat.SignalRConnections
             };
         }
 
-        private static void RemoveUser(string connectionId)
+        private void RemoveUser(string connectionId)
         {
             _connectedUsers.Add(CreateUser(connectionId));
         }
 
-        private static bool UserIsNotNull(User user)
+        private bool HasUser(User user)
         {
             return user != null;
         }

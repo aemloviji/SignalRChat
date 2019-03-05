@@ -106,9 +106,8 @@ function htmlEncode(value) {
 
 function addUser(id, name) {
     var currentUserId = $('#hiddenUserId').val();
-
     if (currentUserId !== id) {
-
-        $("#chat-users").append('<li id="' + id + '" class="list-group-item">' + name + '</li>');
+        $("#chat-users")
+            .append('<li id="' + id + '" class="list-group-item">' + name + '</li>');
     }
 }
