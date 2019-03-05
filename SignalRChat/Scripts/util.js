@@ -1,5 +1,8 @@
+var userHasActiveSession = false;
+
 $(function () {
     var chat = $.connection.chatHub;
+
     chat.client.addMessage = function (name, message) {
 
         createNewMessageElement(name, message);
@@ -7,7 +10,7 @@ $(function () {
     };
 
     chat.client.onConnected = function (id, userName, allActiveUsers) {
-
+        userHasActiveSession = true;
         activateChatRoom();
         saveConnectedUserInfo(id, userName);
         greetUser(userName);
@@ -15,12 +18,13 @@ $(function () {
     };
 
     chat.client.onNewUserConnected = function (id, name) {
-
-        addUser(id, name);
+        if (userHasActiveSession) {
+            addUser(id, name);
+        }
     };
 
     chat.client.onUserDisconnected = function (id) {
-
+        deactivateUserActiveSession(id);
         removeUserById(id);
     };
 
@@ -30,12 +34,19 @@ $(function () {
     });
 });
 
+function deactivateUserActiveSession(id) {
+    var currentUserId = $('#hiddenUserId').val();
+    if (currentUserId === id) {
+        userHasActiveSession = false;
+    }
+}
+
 function registerJsEvent(chat) {
     bindClickEventToLoginButton();
     bindClickEventToSendMessageButton();
 
     function bindClickEventToSendMessageButton() {
-        $("#buttonLogin").click(function() {
+        $("#buttonLogin").click(function () {
             var name = $("#inputUserName").val().trim();
             if (name.length > 0) {
                 chat.server.connect(name);
@@ -47,7 +58,7 @@ function registerJsEvent(chat) {
     }
 
     function bindClickEventToLoginButton() {
-        $('#buttonSendMessage').click(function() {
+        $('#buttonSendMessage').click(function () {
             chat.server.send($('#hiddenUserName').val(), $('#inputMessage').val());
             $('#inputMessage').val('');
         });
