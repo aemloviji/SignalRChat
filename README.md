@@ -1,4 +1,4 @@
-# SignalRChat
+# SignalR Chat App
 Chat application using ASP.NET MVC5 and SignalR.
 Application uses SignalR Hub model for establishing connection between client and server
 
