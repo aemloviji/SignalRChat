@@ -4,14 +4,26 @@ $(function () {
     var myConnection = $.connection("/chat");
 
     myConnection.received(function (data) {
-
-
-        $("#chatroom ul").append("<li><strong>" + htmlEncode(data.Name) +
-            '</strong>: ' + htmlEncode(data.Message) + "</li>");
+        handlePayload(data);
     });
 
     registerJsEvents(myConnection);
 });
+
+function handlePayload(data) {
+    switch (data.Type) {
+        case "UserConnectedPayload":
+            //$("#chat-users")
+            //    .append('<li id="' + id + '" class="list-group-item">' + data.UserName + '</li>');
+            break;
+        case "NewMessagePayload":
+            createNewMessageElement(data.UserName, data.Message);
+            scroolMessagesPane();
+            break;
+        default:
+            break;
+    }
+}
 
 function deactivateUserActiveSession(id) {
     var currentUserId = $('#hiddenUserId').val();
@@ -27,14 +39,15 @@ function registerJsEvents(chatConnection) {
         $("#buttonLogin").click(function () {
             var name = $("#inputUserName").val().trim();
             if (name.length > 0) {
-                chatConnection.start().done(function () {
+                chatConnection.start().done(function (data) {
+                    console.info(data.id);
                     userHasActiveSession = true;
 
                     bindClickEventToSendMessageButton();
                     activateChatRoom();
 
-                    var clientPayload = { type: "UserConnectedRequest", userName: $("#inputUserName").val().trim() };
-                    chatConnection.send(JSON.stringify(clientPayload));
+                    var clientRequest = { type: "UserConnectedRequest", userName: $("#inputUserName").val().trim() };
+                    chatConnection.send(JSON.stringify(clientRequest));
                 });
             }
             else {
@@ -45,7 +58,12 @@ function registerJsEvents(chatConnection) {
 
     function bindClickEventToSendMessageButton() {
         $('#buttonSendMessage').click(function () {
-            chatConnection.send(JSON.stringify({ name: $('#hiddenUserName').val(), message: $('#inputMessage').val() }));
+            var clientRequest = {
+                type: "NewMessageRequest",
+                userName: $("#inputUserName").val().trim(),
+                message: $('#inputMessage').val().trim()
+            };
+            chatConnection.send(JSON.stringify(clientRequest));
             $('#inputMessage').val('');
         });
     }

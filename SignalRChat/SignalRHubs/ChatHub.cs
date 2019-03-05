@@ -8,7 +8,7 @@ namespace SignalRChat.SignalRHubs
 {
     public class ChatHub : Hub
     {
-        private static readonly List<User> _users = new List<User>();
+        private static readonly List<User> _connectedUsers = new List<User>();
 
         //This method will be called from client when user try to send message
         public void Send(string name, string message)
@@ -19,44 +19,49 @@ namespace SignalRChat.SignalRHubs
         //This method will be called from client when user try to login
         public void Connect(string userName)
         {
-            var connectionId = Context.ConnectionId;
-
-            if (HasNotUser(connectionId))
+            var connectionId = RetreiveConnectionIdFromContext();
+            if (UserDoesNotExist(connectionId))
             {
                 AddUserToList(userName, connectionId);
-
-                Clients.Caller.onConnected(connectionId, userName, _users);
-                Clients.AllExcept(connectionId).onNewUserConnected(connectionId, userName);
+                SendUserConnectedSignals(userName, connectionId);
             }
+        }
+
+        private void SendUserConnectedSignals(string userName, string connectionId)
+        {
+            Clients.Caller.onConnected(connectionId, userName, _connectedUsers);
+            Clients.AllExcept(connectionId).onNewUserConnected(connectionId, userName);
         }
 
         //This method will be called automatically when user will close tab or browser
         public override Task OnDisconnected(bool stopCalled)
         {
-            var connectionId = Context.ConnectionId;
-            var user = _users.FirstOrDefault(u => u.ConnectionId == connectionId);
-
-            if (UserIsNotNull(user))
-            {
-                RemoveUserFromList(user);
-                Clients.All.onUserDisconnected(connectionId);
-            }
-
+            HandleOnDisconnetedAction();
             return base.OnDisconnected(stopCalled);
         }
 
+
         #region private methods
-        private static bool HasNotUser(string connectionId)
+        private string RetreiveConnectionIdFromContext()
         {
-            return !_users.Any(u => u.ConnectionId == connectionId);
+            return Context.ConnectionId;
+        }
+        private User FindUser(string connectionId)
+        {
+            return _connectedUsers.FirstOrDefault(u => u.ConnectionId == connectionId);
         }
 
-        private static void AddUserToList(string userName, string connectionId)
+        private static bool UserDoesNotExist(string connectionId)
         {
-            _users.Add(CreateUser(connectionId, userName));
+            return !_connectedUsers.Any(u => u.ConnectionId == connectionId);
         }
 
-        private static User CreateUser(string connectionId, string userName)
+        private void AddUserToList(string userName, string connectionId)
+        {
+            _connectedUsers.Add(CreateUser(connectionId, userName));
+        }
+
+        private User CreateUser(string connectionId, string userName)
         {
             return new User()
             {
@@ -65,14 +70,30 @@ namespace SignalRChat.SignalRHubs
             };
         }
 
-        private static bool UserIsNotNull(User user)
+        private bool UserIsNotNull(User user)
         {
             return user != null;
         }
-        
-        private static void RemoveUserFromList(User user)
+
+        private void RemoveUserFromList(User user)
         {
-            _users.Remove(user);
+            _connectedUsers.Remove(user);
+        }
+
+        private void HandleOnDisconnetedAction()
+        {
+            var connectionId = RetreiveConnectionIdFromContext();
+            var user = FindUser(connectionId);
+            if (UserIsNotNull(user))
+            {
+                RemoveUserFromList(user);
+                SendUserDisconnectedSignalToAllUsers(connectionId);
+            }
+        }
+
+        private void SendUserDisconnectedSignalToAllUsers(string connectionId)
+        {
+            Clients.All.onUserDisconnected(connectionId);
         }
         #endregion
     }
