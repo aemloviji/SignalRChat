@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNet.SignalR;
 using SignalRChat.Models;
 
-namespace SignalRChat.Hubs
+namespace SignalRChat.SignalRHubs
 {
     public class ChatHub : Hub
     {

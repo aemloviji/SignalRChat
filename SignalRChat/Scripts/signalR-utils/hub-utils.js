@@ -30,7 +30,7 @@ $(function () {
 
     $.connection.hub.start().done(function () {
 
-        registerJsEvent(chat);
+        registerJsEvents(chat);
     });
 });
 
@@ -41,11 +41,11 @@ function deactivateUserActiveSession(id) {
     }
 }
 
-function registerJsEvent(chat) {
+function registerJsEvents(chat) {
     bindClickEventToLoginButton();
     bindClickEventToSendMessageButton();
 
-    function bindClickEventToSendMessageButton() {
+    function bindClickEventToLoginButton() {
         $("#buttonLogin").click(function () {
             var name = $("#inputUserName").val().trim();
             if (name.length > 0) {
@@ -57,7 +57,7 @@ function registerJsEvent(chat) {
         });
     }
 
-    function bindClickEventToLoginButton() {
+    function bindClickEventToSendMessageButton() {
         $('#buttonSendMessage').click(function () {
             chat.server.send($('#hiddenUserName').val(), $('#inputMessage').val());
             $('#inputMessage').val('');
@@ -101,8 +101,7 @@ function greetUser(userName) {
 }
 
 function htmlEncode(value) {
-    var encodedValue = $('<div />').text(value).html();
-    return encodedValue;
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function addUser(id, name) {

@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
-using System.Web.Mvc;
+﻿using System.Web.Mvc;
 
 namespace SignalRChat.Controllers
 {
@@ -13,7 +9,12 @@ namespace SignalRChat.Controllers
             return View();
         }
 
-        public ActionResult Chat()
+        public ActionResult HubChat()
+        {
+            return View();
+        }
+
+        public ActionResult PersistentChat()
         {
             return View();
         }

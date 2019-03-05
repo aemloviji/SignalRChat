@@ -143,7 +143,15 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Hubs\ChatHub.cs" />
+    <Compile Include="Models\PersistentClientRequests\NewMessageRequest.cs" />
+    <Compile Include="Models\PersistentClientRequests\UserConnectedRequest.cs" />
+    <Compile Include="Models\PersistentClientRequests\ClientRequest.cs" />
+    <Compile Include="Models\PersistentPayloads\Payload.cs" />
+    <Compile Include="Models\PersistentPayloads\NewMessagePayload.cs" />
+    <Compile Include="Models\PersistentPayloads\UserDisconnectedPayload.cs" />
+    <Compile Include="Models\PersistentPayloads\UserConnectedPayload.cs" />
+    <Compile Include="SignalRConnections\ChatConnection.cs" />
+    <Compile Include="SignalRHubs\ChatHub.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
@@ -177,7 +185,8 @@
     <Content Include="Scripts\jquery-3.3.1.min.js" />
     <Content Include="Scripts\jquery-3.3.1.slim.js" />
     <Content Include="Scripts\jquery-3.3.1.slim.min.js" />
-    <Content Include="Scripts\util.js" />
+    <Content Include="Scripts\signalR-utils\persistent-utils.js" />
+    <Content Include="Scripts\signalR-utils\hub-utils.js" />
     <Content Include="Scripts\esm\popper-utils.js" />
     <Content Include="Scripts\esm\popper-utils.min.js" />
     <Content Include="Scripts\esm\popper.js" />
@@ -216,7 +225,7 @@
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
-    <Content Include="Views\Home\Chat.cshtml" />
+    <Content Include="Views\Home\HubChat.cshtml" />
     <Content Include="Views\Home\Index.cshtml" />
     <Content Include="Scripts\umd\popper.min.js.map" />
     <Content Include="Scripts\umd\popper.js.map" />
@@ -227,6 +236,7 @@
     <Content Include="Scripts\popper.js.map" />
     <Content Include="Scripts\popper-utils.min.js.map" />
     <Content Include="Scripts\popper-utils.js.map" />
+    <Content Include="Views\Home\PersistentChat.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
