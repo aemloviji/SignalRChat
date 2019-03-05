@@ -10,11 +10,13 @@ namespace SignalRChat.Hubs
     {
         private static readonly List<User> _users = new List<User>();
 
+        //This method will be called from client when user try to send message
         public void Send(string name, string message)
         {
             Clients.All.addMessage(name, message);
         }
 
+        //This method will be called from client when user try to login
         public void Connect(string userName)
         {
             var connectionId = Context.ConnectionId;
@@ -28,6 +30,7 @@ namespace SignalRChat.Hubs
             }
         }
 
+        //This method will be called automatically when user will close tab or browser
         public override Task OnDisconnected(bool stopCalled)
         {
             var connectionId = Context.ConnectionId;
@@ -35,13 +38,14 @@ namespace SignalRChat.Hubs
 
             if (UserIsNotNull(user))
             {
-                _users.Remove(user);
-                Clients.All.onUserDisconnected(connectionId, user.Name);
+                RemoveUserFromList(user);
+                Clients.All.onUserDisconnected(connectionId);
             }
 
             return base.OnDisconnected(stopCalled);
         }
 
+        #region private methods
         private static bool HasNotUser(string connectionId)
         {
             return !_users.Any(u => u.ConnectionId == connectionId);
@@ -65,5 +69,11 @@ namespace SignalRChat.Hubs
         {
             return user != null;
         }
+        
+        private static void RemoveUserFromList(User user)
+        {
+            _users.Remove(user);
+        }
+        #endregion
     }
 }
