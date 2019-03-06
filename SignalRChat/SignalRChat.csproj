@@ -153,6 +153,7 @@
     <Compile Include="Models\PersistentPayloads\UserConnectedPayload.cs" />
     <Compile Include="Models\RequestTypes.cs" />
     <Compile Include="SignalRConnections\ChatConnection.cs" />
+    <Compile Include="SignalRHubs\PushHub.cs" />
     <Compile Include="SignalRHubs\ChatHub.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
