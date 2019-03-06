@@ -13,11 +13,17 @@ $(function () {
 function handlePayload(data) {
     switch (data.Type) {
         case "UserConnectedPayload":
-            //$("#chat-users")
-            //    .append('<li id="' + id + '" class="list-group-item">' + data.UserName + '</li>');
+            addUser(data.User.ConnectionId, data.User.Name);
+            break;
+        case "ListOfUserPayload":
+            generateUserList(data.Users);
             break;
         case "NewMessagePayload":
             createNewMessageElement(data.UserName, data.Message);
+            scroolMessagesPane();
+            break;
+        case "UserDisconnectedPayload":
+            removeUserById(data.ConnectionId);
             scroolMessagesPane();
             break;
         default:
@@ -37,23 +43,37 @@ function registerJsEvents(chatConnection) {
 
     function bindClickEventToLoginButton() {
         $("#buttonLogin").click(function () {
-            var name = $("#inputUserName").val().trim();
-            if (name.length > 0) {
+            var userName = $("#inputUserName").val().trim();
+            if (userName.length > 0) {
                 chatConnection.start().done(function (data) {
-                    console.info(data.id);
-                    userHasActiveSession = true;
-
-                    bindClickEventToSendMessageButton();
-                    activateChatRoom();
-
-                    var clientRequest = { type: "UserConnectedRequest", userName: $("#inputUserName").val().trim() };
-                    chatConnection.send(JSON.stringify(clientRequest));
+                    onConnectionStartDone(data, userName);
+                    getListOfActiveUsers();
                 });
             }
             else {
                 alert("Please enter a username!");
             }
         });
+
+        function onConnectionStartDone(data, userName) {
+            var connectionId = data.id;
+            userHasActiveSession = true;
+            activateChatRoom();
+            saveConnectedUserInfo(connectionId, userName);
+            greetUser(userName);
+            bindClickEventToSendMessageButton();
+            sendUserConnectedRequest();
+        }
+
+        function sendUserConnectedRequest() {
+            var clientRequest = { type: "UserConnectedRequest", userName: $("#inputUserName").val().trim() };
+            chatConnection.send(JSON.stringify(clientRequest));
+        }
+
+        function getListOfActiveUsers() {
+            var clientRequest = { type: "GetListOfUsersRequest" };
+            chatConnection.send(JSON.stringify(clientRequest));
+        }
     }
 
     function bindClickEventToSendMessageButton() {
@@ -78,9 +98,9 @@ function activateChatRoom() {
     $('#block-chat').show();
 }
 
-function showUserList(allActiveUsers) {
-    for (i = 0; i < allActiveUsers.length; i++) {
-        addUser(allActiveUsers[i].ConnectionId, allActiveUsers[i].Name);
+function generateUserList(users) {
+    for (i = 0; i < users.length; i++) {
+        addUser(users[i].ConnectionId, users[i].Name);
     }
 }
 

@@ -14,7 +14,7 @@ $(function () {
         activateChatRoom();
         saveConnectedUserInfo(id, userName);
         greetUser(userName);
-        showUserList(allActiveUsers);
+        generateUserList(allActiveUsers);
     };
 
     chat.client.onNewUserConnected = function (id, name) {
@@ -74,7 +74,7 @@ function activateChatRoom() {
     $('#block-chat').show();
 }
 
-function showUserList(allActiveUsers) {
+function generateUserList(allActiveUsers) {
     for (i = 0; i < allActiveUsers.length; i++) {
         addUser(allActiveUsers[i].ConnectionId, allActiveUsers[i].Name);
     }

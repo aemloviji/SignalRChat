@@ -4,6 +4,6 @@ namespace SignalRChat.Models.PersistentPayloads
 {
     public class UserConnectedPayload : Payload
     {
-        public List<User> Users { get; set; }
+        public User User { get; set; }
     }
 }

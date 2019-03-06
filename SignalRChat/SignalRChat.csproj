@@ -148,8 +148,10 @@
     <Compile Include="Models\PersistentClientRequests\ClientRequest.cs" />
     <Compile Include="Models\PersistentPayloads\Payload.cs" />
     <Compile Include="Models\PersistentPayloads\NewMessagePayload.cs" />
+    <Compile Include="Models\PersistentPayloads\ListOfUserPayload.cs" />
     <Compile Include="Models\PersistentPayloads\UserDisconnectedPayload.cs" />
     <Compile Include="Models\PersistentPayloads\UserConnectedPayload.cs" />
+    <Compile Include="Models\RequestTypes.cs" />
     <Compile Include="SignalRConnections\ChatConnection.cs" />
     <Compile Include="SignalRHubs\ChatHub.cs" />
     <Compile Include="Models\User.cs" />

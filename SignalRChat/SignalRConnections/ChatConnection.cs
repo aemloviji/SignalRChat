@@ -1,11 +1,11 @@
-﻿using Microsoft.AspNet.SignalR;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.AspNet.SignalR;
 using Newtonsoft.Json;
 using SignalRChat.Models;
 using SignalRChat.Models.PersistentClientRequests;
 using SignalRChat.Models.PersistentPayloads;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SignalRChat.SignalRConnections
 {
@@ -23,12 +23,22 @@ namespace SignalRChat.SignalRConnections
         {
             var commonClientRequestData = DeserializeClientRequestData(data);
             var clientRequest = DeserializeClientRequest(commonClientRequestData.Type, data);
-            if (commonClientRequestData.Type == nameof(UserConnectedRequest))
+            if (commonClientRequestData.Type == RequestTypes.UserConnectedRequest)
             {
                 UpdateUserUserName(connectionId, clientRequest);
             }
 
-            return Connection.Broadcast(GeneratePayload(commonClientRequestData.Type, clientRequest));
+            var payload = GeneratePayload(connectionId, commonClientRequestData.Type, clientRequest);
+            if (commonClientRequestData.Type == RequestTypes.UserConnectedRequest)
+            {
+                return Connection.Broadcast(payload, connectionId);
+            }
+            else if (commonClientRequestData.Type == RequestTypes.GetListOfUsersRequest)
+            {
+                return Connection.Send(connectionId, payload);
+            }
+
+            return Connection.Broadcast(payload);
         }
 
         protected override Task OnDisconnected(IRequest request, string connectionId, bool stopCalled)
@@ -74,11 +84,15 @@ namespace SignalRChat.SignalRConnections
         private object DeserializeClientRequest(string clientRequestType, string data)
         {
             object request = null;
-            if (clientRequestType == nameof(UserConnectedRequest))
+            if (clientRequestType == RequestTypes.UserConnectedRequest)
             {
                 request = JsonConvert.DeserializeObject<UserConnectedRequest>(data);
             }
-            else if (clientRequestType == nameof(NewMessageRequest))
+            if (clientRequestType == RequestTypes.GetListOfUsersRequest)
+            {
+                request = DeserializeClientRequestData(data);
+            }
+            else if (clientRequestType == RequestTypes.NewMessageRequest)
             {
                 request = JsonConvert.DeserializeObject<NewMessageRequest>(data);
             }
@@ -86,14 +100,18 @@ namespace SignalRChat.SignalRConnections
             return request;
         }
 
-        private object GeneratePayload(string clientRequestType, object data)
+        private object GeneratePayload(string connectionId, string clientRequestType, object data)
         {
             object payload = null;
-            if (clientRequestType == nameof(UserConnectedRequest))
+            if (clientRequestType == RequestTypes.UserConnectedRequest)
             {
-                payload = GenerateUserConnectedPayload(data);
+                payload = GenerateUserConnectedPayload(connectionId, data);
             }
-            else if (clientRequestType == nameof(NewMessageRequest))
+            else if (clientRequestType == RequestTypes.GetListOfUsersRequest)
+            {
+                payload = GenerateListOfUserPayload(connectionId);
+            }
+            else if (clientRequestType == RequestTypes.NewMessageRequest)
             {
                 payload = GenerateNewMessagePayload(data);
             }
@@ -101,10 +119,31 @@ namespace SignalRChat.SignalRConnections
             return payload;
         }
 
-        private object GenerateNewMessagePayload(object data)
+        private ListOfUserPayload GenerateListOfUserPayload(string connectionId)
+        {
+            var payload = new ListOfUserPayload()
+            {
+                Type = nameof(ListOfUserPayload)
+            };
+            payload.Users.AddRange(GetUsersExcept(connectionId));
+
+            return payload;
+        }
+
+        private static IEnumerable<User> GetUsersExcept(string connectionId)
+        {
+            return _connectedUsers.Where(u => ConnectionIdsAreDifferent(u.ConnectionId, connectionId));
+        }
+
+        private static bool ConnectionIdsAreDifferent(string userConnectionId, string connectionId)
+        {
+            return userConnectionId != connectionId;
+        }
+
+        private NewMessagePayload GenerateNewMessagePayload(object data)
         {
             var obj = (NewMessageRequest)data;
-            object payload = new NewMessagePayload()
+            var payload = new NewMessagePayload()
             {
                 Type = nameof(NewMessagePayload),
                 UserName = obj.UserName,
@@ -114,13 +153,13 @@ namespace SignalRChat.SignalRConnections
             return payload;
         }
 
-        private object GenerateUserConnectedPayload(object data)
+        private UserConnectedPayload GenerateUserConnectedPayload(string connectionId, object data)
         {
             var obj = (UserConnectedRequest)data;
             var payload = new UserConnectedPayload()
             {
                 Type = nameof(UserConnectedPayload),
-                Users = new List<User>()
+                User = new User() { ConnectionId = connectionId, Name = obj.Username }
             };
 
             return payload;
@@ -137,7 +176,11 @@ namespace SignalRChat.SignalRConnections
 
         private void RemoveUser(string connectionId)
         {
-            _connectedUsers.Add(CreateUser(connectionId));
+            var user = _connectedUsers.FirstOrDefault(u => u.ConnectionId == connectionId);
+            if (HasUser(user))
+            {
+                _connectedUsers.Remove(user);
+            }
         }
 
         private bool HasUser(User user)
